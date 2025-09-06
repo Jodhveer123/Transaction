@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futuristic Expense Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* --- Fonts --- 
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');*/
+
+/* --- Base Theme --- */
+body {
+  font-family: 'Orbitron', sans-serif;
+  margin: 0; padding: 0;
+  transition: background 0.5s, color 0.5s;
+}
+.hidden { display: none; }
+button, input, select { font-family: 'Orbitron', sans-serif; }
+
+/* --- Dark & Light Modes --- */
+body.dark { background: #0f0f18; color: #fff; }
+body.light { background: #f0f0f0; color: #111; }
+
+.auth, .container {
+  max-width: 600px;
+  margin: 30px auto;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  transition: background 0.5s, border-color 0.5s, box-shadow 0.5s;
+}
+body.dark .auth, body.dark .container { 
+  background: rgba(10,10,20,0.95);
+  border: 2px solid #00fff7;
+  box-shadow: 0 0 20px #00fff7;
+}
+body.light .auth, body.light .container {
+  background: #fff;
+  border: 2px solid #007bff;
+  box-shadow: 0 0 20px #007bff;
+  color: #111;
+}
+
+/* --- Inputs & Buttons --- */
+.auth input, .container input, .container select {
+  width: 90%; margin: 10px 0; padding: 12px; border-radius: 10px; font-size:16px;
+  transition: background 0.3s, color 0.3s, border 0.3s;
+}
+body.dark .auth input, body.dark .container input, body.dark .container select {
+  background: #0f0f18; color: #00fff7; border: 1px solid #00fff7;
+}
+body.light .auth input, body.light .container input, body.light .container select {
+  background: #fff; color: #111; border: 1px solid #007bff;
+}
+
+.auth button, .container button {
+  padding: 10px 15px; border: none; border-radius: 12px; cursor: pointer; font-weight:bold; margin:5px;
+  transition: 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+body.dark .auth button, body.dark .container button { background: #00fff7; color:#0f0f18;}
+body.light .auth button, body.light .container button { background: #007bff; color:#fff;}
+.auth button:hover, .container button:hover { transform: scale(1.05); }
+
+/* --- Logout Button --- */
+.logout { float:right; margin-top:-40px; }
+body.dark .logout { background: #ff00ff; color:#0f0f18;}
+body.light .logout { background: #ff4444; color:#fff; }
+
+/* --- Profile --- */
+#profile-section {
+  border-radius:15px; padding:15px; margin-bottom:20px; transition: background 0.5s, border 0.5s, color 0.5s;
+}
+body.dark #profile-section { background:#111126; border:2px solid #ff00ff; color:#00fff7;}
+body.light #profile-section { background:#e0e0ff; border:2px solid #007bff; color:#111; }
+#profile-section input { width:80%; margin:5px 0; padding:8px; border-radius:8px; border:none; }
+#profile-section button { padding:6px 12px; }
+
+/* --- Balance & Income/Expense --- */
+.balance, .income-expense { margin: 20px 0; text-align:center; }
+.balance h2, .income-expense h3 { transition: color 0.5s;}
+body.dark .balance h2, body.dark .income-expense h3 { color:#00fff7; }
+body.light .balance h2, body.light .income-expense h3 { color:#007bff; }
+
+.income-expense div { display:inline-block; width:45%; text-align:center; }
+
+/* --- Transaction List --- */
+#list li { display:flex; justify-content:space-between; margin:5px 0; padding:8px; border-radius:8px; transition: background 0.5s, border-left 0.5s, color 0.5s; }
+body.dark #list li { background:#111126; border-left:4px solid #00fff7; color:#fff;}
+body.light #list li { background:#f0f0ff; border-left:4px solid #007bff; color:#111;}
+#list button { border-radius:5px; padding:3px 7px; }
+body.dark #list button { background:#ff00ff; color:#0f0f18;}
+body.light #list button { background:#ff4444; color:#fff;}
+#list li:hover { transform: translateX(2px); }
+
+/* --- Chart --- */
+canvas { margin-top:20px; border-radius:15px; transition: box-shadow 0.5s; }
+body.dark canvas { box-shadow: 0 0 20px #00fff7;}
+body.light canvas { box-shadow: 0 0 20px #007bff; }
+
+/* --- Toggle Button --- */
+#themeToggle { margin-bottom:10px;
+margin-left: -100px;
+}
+</style>
+</head>
+<body class="dark">
+
+<!-- Auth Section -->
+<div id="auth-section" class="auth">
+  <h2>Login / Signup</h2>
+  <input type="text" id="email" placeholder="Enter Username">
+  <input type="password" id="password" placeholder="Enter Password">
+  <button id="loginBtn">Login</button>
+  <button id="signupBtn">Signup</button>
+</div>
+
+<!-- Main App -->
+<div id="app-section" class="container hidden">
+  <button id="logoutBtn" class="logout">Logout</button>
+  <button id="themeToggle">Toggle Dark/Light</button>
+
+  <!-- Profile -->
+  <div id="profile-section">
+    <h2>Your Profile</h2>
+    <p>Username: <span id="userName"></span></p>
+    <input type="text" id="displayNameInput" placeholder="Set display name">
+    <button id="setNameBtn">Save Name</button>
+  </div>
+
+  <!-- Balance -->
+  <div class="balance"><h2>Your Balance</h2><p id="balance">₹0.00</p></div>
+
+  <!-- Income/Expense -->
+  <div class="income-expense">
+    <div><h3>Income</h3><p id="income">+₹0.00</p></div>
+    <div><h3>Expense</h3><p id="expense">-₹0.00</p></div>
+  </div>
+
+  <!-- Chart -->
+  <canvas id="expenseChart"></canvas>
+
+  <!-- History -->
+  <h3>History</h3>
+  <ul id="list"></ul>
+
+  <!-- Add Transaction -->
+  <h3>Add New Transaction</h3>
+  <form id="form">
+    <input type="text" id="text" placeholder="Enter description" required>
+    <input type="number" id="amount" placeholder="Enter amount (+/-)" required>
+    <select id="category" required>
+      <option value="General">General</option>
+      <option value="Food">Food</option>
+      <option value="Transport">Transport</option>
+      <option value="Shopping">Shopping</option>
+      <option value="Bills">Bills</option>
+      <option value="Salary">Salary</option>
+      <option value="Other">Other</option>
+    </select>
+    <button type="submit">Add Transaction</button>
+  </form>
+</div>
+
+<script>
+// --- Variables ---
+const authSection = document.getElementById("auth-section");
+const appSection = document.getElementById("app-section");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const signupBtn = document.getElementById("signupBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const themeToggle = document.getElementById("themeToggle");
+const userNameSpan = document.getElementById("userName");
+const displayNameInput = document.getElementById("displayNameInput");
+const setNameBtn = document.getElementById("setNameBtn");
+
+const balanceEl = document.getElementById("balance");
+const incomeEl = document.getElementById("income");
+const expenseEl = document.getElementById("expense");
+const listEl = document.getElementById("list");
+const form = document.getElementById("form");
+const textInput = document.getElementById("text");
+const amountInput = document.getElementById("amount");
+const categoryInput = document.getElementById("category");
+
+let currentUser = null;
+
+let expenseChart = new Chart(document.getElementById("expenseChart"), {
+  type: "pie",
+  data: {
+    labels: ["Food","Transport","Shopping","Bills","Salary","Other","General"],
+    datasets: [{
+      data: [0,0,0,0,0,0,0],
+      backgroundColor: ["#ff4444","#ffaa00","#00aaff","#8844ff","#00ff88","#ff66cc","#999999"]
+    }]
+  },
+  options:{responsive:true, plugins:{legend:{labels:{color:"#00fff7"}}}}
+});
+
+// --- LocalStorage ---
+function saveUsers(users){ localStorage.setItem("users", JSON.stringify(users)); }
+function getUsers(){ return JSON.parse(localStorage.getItem("users")||"{}"); }
+function saveTransactions(){ localStorage.setItem("transactions", JSON.stringify(transactions)); }
+function getTransactions(){ return JSON.parse(localStorage.getItem("transactions")||"[]"); }
+
+let users = getUsers();
+let transactions = getTransactions();
+
+// --- Auth Functions ---
+signupBtn.addEventListener("click", ()=>{
+  const username = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  if(!username || !password){ alert("Enter username & password"); return; }
+  if(users[username]){ alert("User already exists"); return; }
+  users[username] = { username: username, password: password, displayName: username };
+  saveUsers(users);
+  alert("Signup successful! Login now.");
+});
+loginBtn.addEventListener("click", ()=>{
+  const username = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  if(users[username] && users[username].password === password){
+    currentUser = users[username];
+    authSection.classList.add("hidden");
+    appSection.classList.remove("hidden");
+    updateProfileUI();
+    fetchTransactions();
+  } else { alert("Invalid username/password"); }
+});
+logoutBtn.addEventListener("click", ()=>{
+  currentUser = null;
+  authSection.classList.remove("hidden");
+  appSection.classList.add("hidden");
+});
+
+// --- Profile ---
+setNameBtn.addEventListener("click", ()=>{
+  if(!currentUser) return;
+  const name = displayNameInput.value.trim();
+  if(!name) return;
+  currentUser.displayName = name;
+  users[currentUser.username] = currentUser;
+  saveUsers(users);
+  updateProfileUI();
+  displayNameInput.value = "";
+});
+function updateProfileUI(){
+  if(currentUser) userNameSpan.textContent = currentUser.displayName;
+}
+
+// --- Transactions ---
+form.addEventListener("submit", (e)=>{
+  e.preventDefault();
+  if(!currentUser) return;
+  const transaction = {
+    id: Date.now(),
+    user: currentUser.username,
+    text: textInput.value,
+    amount: +amountInput.value,
+    category: categoryInput.value
+  };
+  transactions.push(transaction);
+  saveTransactions();
+  textInput.value = ""; amountInput.value = "";
+  fetchTransactions();
+});
+
+function fetchTransactions(){
+  if(!currentUser) return;
+  const userTransactions = transactions.filter(t=>t.user===currentUser.username);
+  renderTransactions(userTransactions);
+}
+
+function renderTransactions(transactionsList){
+  listEl.innerHTML="";
+  let amounts = [];
+  let categorySums = {Food:0,Transport:0,Shopping:0,Bills:0,Salary:0,Other:0,General:0};
+  transactionsList.forEach(t=>{
+    amounts.push(t.amount);
+    if(t.amount<0) categorySums[t.category]+=Math.abs(t.amount);
+    const li = document.createElement("li");
+    const sign = t.amount<0 ? "-" : "+";
+    li.innerHTML = `${t.text} (${t.category}) <span>${sign}₹${Math.abs(t.amount)}</span> <button onclick="removeTransaction(${t.id})">x</button>`;
+    listEl.appendChild(li);
+  });
+  const total = amounts.reduce((a,b)=>a+b,0).toFixed(2);
+  const inc = amounts.filter(i=>i>0).reduce((a,b)=>a+b,0).toFixed(2);
+  const exp = amounts.filter(i=>i<0).reduce((a,b)=>a+b,0).toFixed(2);
+  balanceEl.textContent=`₹${total}`;
+  incomeEl.textContent=`+₹${inc}`;
+  expenseEl.textContent=`-₹${Math.abs(exp)}`;
+  expenseChart.data.datasets[0].data = Object.values(categorySums);
+  expenseChart.update();
+}
+
+function removeTransaction(id){
+  transactions = transactions.filter(t=>t.id!==id);
+  saveTransactions();
+  fetchTransactions();
+}
+window.removeTransaction = removeTransaction;
+
+// --- Theme Toggle ---
+themeToggle.addEventListener("click", ()=>{
+  document.body.classList.toggle("dark");
+  document.body.classList.toggle("light");
+});
+
+// --- Demo Mode ---
+/*currentUser = { username: "demo", displayName: "Demo User" };
+authSection.classList.add("hidden");
+appSection.classList.remove("hidden");
+updateProfileUI();
+fetchTransactions();*/
+</script>
+</body>
+</html>
